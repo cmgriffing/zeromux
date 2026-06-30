@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZeroMux | The Anti-Multiplexer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        astro: {
+                            950: '#0B0D17',
+                            900: '#111524',
+                            800: '#1A2035',
+                            accent: '#06B6D4', // Cyan
+                            glow: '#2DD4BF',   // Teal
+                            error: '#EF4444',
+                        }
+                    },
+                    backgroundImage: {
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B0D17;
+            color: #e2e8f0;
+        }
+
+        /* Joke Modal */
+        .joke-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+        }
+        .joke-overlay.active {
+            display: flex;
+        }
+
+        /* Strikethrough comparison */
+        .feature-removed {
+            text-decoration: line-through;
+            opacity: 0.4;
+        }
+        .feature-kept {
+            color: #06B6D4;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0D17;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1A2035;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06B6D4;
+        }
+
+        /* Grid Pattern Background */
+        .bg-grid-pattern {
+            background-image: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: linear-gradient(to bottom, black 20%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 100%);
+        }
+
+        /* Terminal Cursor Blink */
+        .cursor-blink {
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Glassmorphism utilities */
+        .glass {
+            background: rgba(17, 21, 36, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="antialiased relative overflow-x-hidden selection:bg-astro-accent/30 selection:text-white">
+
+    <!-- Joke Modal -->
+    <div id="joke-modal" class="joke-overlay" onclick="closeJokeModal(event)">
+        <div class="max-w-lg mx-4 bg-astro-900 border border-white/10 rounded-3xl p-8 md:p-10 text-center shadow-2xl" onclick="event.stopPropagation()">
+            <div class="w-20 h-20 rounded-full bg-astro-error/10 border border-astro-error/20 flex items-center justify-center text-4xl mx-auto mb-6">
+                🤡
+            </div>
+            <h3 class="font-display text-2xl md:text-3xl font-bold text-white mb-4">Hold up — this isn't real.</h3>
+            <p class="text-slate-400 text-base leading-relaxed mb-4">
+                ZeroMux is a <strong class="text-white">satirical project</strong>. It does not exist. There is nothing to install.
+            </p>
+            <p class="text-slate-400 text-base leading-relaxed mb-6">
+                Please do <strong class="text-astro-error">not</strong> paste random <code class="text-xs bg-black/50 px-1.5 py-0.5 rounded text-white font-mono">curl | bash</code> commands into your terminal. That's how you get malware, not a minimalist terminal.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="closeJokeModal()" class="px-6 py-3 bg-white text-astro-950 font-bold rounded-full text-sm hover:bg-slate-200 transition-colors">
+                    I understand, it's a joke
+                </button>
+                <a href="https://github.com/tmux/tmux" target="_blank" class="px-6 py-3 bg-white/10 border border-white/10 text-white font-medium rounded-full text-sm hover:bg-white/20 transition-colors inline-flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-github"></i> Use real tmux instead
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ambient Background Glows -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern z-0"></div>
+    </div>
+
+    <!-- Navigation -->
+    <header id="header-main" class="fixed top-0 w-full z-50 glass border-b-0 border-white/5">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-astro-accent flex items-center justify-center text-white font-mono font-bold text-sm shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                    Z0
+                </div>
+                <span class="font-display font-bold text-xl tracking-tight text-white">ZeroMux</span>
+            </div>
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+                <a href="#features" class="hover:text-white transition-colors">Anti-Features</a>
+                <a href="#philosophy" class="hover:text-white transition-colors">Philosophy</a>
+                <a href="#docs" class="hover:text-white transition-colors">Docs</a>
+            </nav>
+            <div class="flex items-center gap-4">
+                <a href="https://github.com" target="_blank" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-brands fa-github text-xl"></i>
+                </a>
+                <button onclick="openJokeModal()" class="hidden md:inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-white/10 border border-white/10 rounded-full hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
+                    Install Now
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content" class="relative z-10 pt-32 pb-24">
+        
+        <!-- Hero Section -->
+        <section id="section-hero" class="max-w-7xl mx-auto px-6 pt-12 md:pt-24 pb-32">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                
+                <!-- Hero Copy -->
+                <div class="flex flex-col gap-8">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-astro-error/10 border border-astro-error/20 text-astro-error text-xs font-mono w-fit">
+                        <span class="w-2 h-2 rounded-full bg-astro-error animate-pulse"></span>
+                        v1.0.0: Splitting is now a fatal error
+                    </div>
+                    
+                    <h1 class="font-display text-5xl md:text-7xl font-bold tracking-tighter text-white leading-[1.1]">
+                        The <span class="text-astro-accent">Anti-Multiplexer</span>
+                    </h1>
+                    
+                    <p class="text-lg md:text-xl text-slate-400 leading-relaxed max-w-xl">
+                        Stop context switching. Start focusing. ZeroMux opens exactly one terminal window and violently refuses to split panes. <strong class="text-white font-medium">For your own good.</strong>
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                        <a href="#install" class="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-astro-950 bg-white rounded-full hover:bg-slate-200 transition-all hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:-translate-y-1">
+                            Embrace Singularity
+                        </a>
+                        <a href="#philosophy" class="inline-flex items-center justify-center px-8 py-4 text-base font-medium text-white bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-all">
+                            Read the Manifesto
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Hero Terminal Mockup -->
+                <div class="relative animate-float">
+                    <div id="card-hero-terminal" class="relative bg-[#0d1117] border border-astro-accent/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[400px]">
+                        <!-- Terminal Header -->
+                        <div class="h-10 bg-[#161b22] border-b border-white/5 flex items-center px-4 gap-2">
+                            <div class="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                            <div class="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                            <div class="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+                            <div class="flex-1 text-center text-xs font-mono text-slate-500">zeromux — bash — 80x24</div>
+                        </div>
+                        
+                        <!-- Terminal Body -->
+                        <div class="p-6 font-mono text-sm leading-relaxed flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden" style="scrollbar-width: none; -ms-overflow-style: none;">
+                            <div class="text-slate-300">
+                                <span class="text-astro-accent">user@host</span>:<span class="text-blue-400">~</span>$ zeromux start
+                            </div>
+                            <div class="text-slate-400 mt-1">
+                                [INFO] ZeroMux initialized. One pane to rule them all.
+                            </div>
+                            <div class="text-slate-300 mt-4">
+                                <span class="text-astro-accent">user@host</span>:<span class="text-blue-400">~</span>$ zeromux split-window -h
+                            </div>
+                            <div class="text-astro-error mt-1 font-bold">
+                                FATAL ERROR: Context switching detected.
+                            </div>
+                            <div class="text-astro-error/80">
+                                > Request denied. You have unfinished business in the current pane.
+                            </div>
+                            <div class="text-slate-300 mt-4">
+                                <span class="text-astro-accent">user@host</span>:<span class="text-blue-400">~</span>$ tmux attach
+                            </div>
+                            <div class="text-yellow-400 mt-1">
+                                WARNING: Legacy multiplexer detected. Executing 'killall tmux'...
+                            </div>
+                            <div class="text-slate-400">
+                                [OK] Distractions eliminated.
+                            </div>
+                            <div class="text-slate-300 mt-4 flex items-center">
+                                <span class="text-astro-accent">user@host</span>:<span class="text-blue-400">~</span>$ <span class="w-2 h-4 bg-slate-300 ml-2 cursor-blink inline-block"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </section>
+
+        <!-- Logos Section (Satirical) -->
+        <section id="section-trusted-by" class="border-y border-white/5 bg-white/[0.02] py-10">
+            <div class="max-w-7xl mx-auto px-6">
+                <p class="text-center text-sm font-mono text-slate-500 mb-6 uppercase tracking-widest">Actively rejected by engineers at</p>
+                <div class="flex flex-wrap justify-center gap-12 md:gap-24 opacity-40 grayscale">
+                    <!-- Fake logos using text/icons -->
+                    <div class="flex items-center gap-2 font-display font-bold text-xl"><i class="fa-brands fa-aws"></i> Amazon</div>
+                    <div class="flex items-center gap-2 font-display font-bold text-xl"><i class="fa-brands fa-google"></i> Google</div>
+                    <div class="flex items-center gap-2 font-display font-bold text-xl"><i class="fa-brands fa-meta"></i> Meta</div>
+                    <div class="flex items-center gap-2 font-display font-bold text-xl"><i class="fa-brands fa-microsoft"></i> Microsoft</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="max-w-7xl mx-auto px-6 py-32">
+            <div class="text-center max-w-3xl mx-auto mb-20">
+                <h2 class="font-display text-3xl md:text-5xl font-bold text-white mb-6">Features you won't find anywhere else.</h2>
+                <p class="text-slate-400 text-lg">Because we explicitly removed them. ZeroMux is built on the principle of subtraction. Less is more. One is everything.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div id="card-feature-1" class="glass p-8 rounded-3xl hover:bg-white/[0.04] transition-colors group border border-white/5 hover:border-astro-accent/50 relative">
+                    <div class="w-14 h-14 rounded-2xl bg-astro-800 border border-white/10 flex items-center justify-center text-2xl text-astro-accent mb-6 shadow-lg">
+                        <i class="fa-solid fa-1"></i>
+                    </div>
+                    <h3 class="font-display text-xl font-bold text-white mb-3">Absolute Singularity</h3>
+                    <p class="text-slate-400 leading-relaxed">One pane. One process. Total clarity. If you need to run a server and edit code, buy a second monitor. Or a second laptop.</p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div id="card-feature-2" class="glass p-8 rounded-3xl hover:bg-white/[0.04] transition-colors group border border-white/5 hover:border-astro-glow/50 relative">
+                    <div class="w-14 h-14 rounded-2xl bg-astro-800 border border-white/10 flex items-center justify-center text-2xl text-astro-glow mb-6 shadow-lg">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h3 class="font-display text-xl font-bold text-white mb-3">Anti-Distraction Engine</h3>
+                    <p class="text-slate-400 leading-relaxed">Attempts to use <code class="text-xs bg-black/50 px-1 py-0.5 rounded text-astro-glow">Ctrl+B %</code> are intercepted and logged to your manager. Stay on task.</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div id="card-feature-3" class="glass p-8 rounded-3xl hover:bg-white/[0.04] transition-colors group border border-white/5 hover:border-astro-error/50 relative">
+                    <div class="w-14 h-14 rounded-2xl bg-astro-800 border border-white/10 flex items-center justify-center text-2xl text-astro-error mb-6 shadow-lg">
+                        <i class="fa-solid fa-scroll"></i>
+                    </div>
+                    <h3 class="font-display text-xl font-bold text-white mb-3">Infinite Scrollback</h3>
+                    <p class="text-slate-400 leading-relaxed">Because you only have one window, you better read it carefully. We store your entire session history in RAM until it crashes.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Philosophy / Code Section -->
+        <section id="philosophy" class="max-w-7xl mx-auto px-6 py-24">
+            <div class="glass rounded-[2.5rem] border border-white/10 p-8 md:p-16 overflow-hidden relative">
+                <div class="grid lg:grid-cols-2 gap-16 items-center relative z-10">
+                    <div>
+                        <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-6">Configuration is an illusion of control.</h2>
+                        <p class="text-slate-400 text-lg mb-8 leading-relaxed">
+                            Other multiplexers offer thousands of configuration options. Keybindings, status bars, colors, layouts. 
+                            <br><br>
+                            ZeroMux offers exactly zero. We have made all the correct decisions for you. Your <code class="text-sm bg-black/30 px-1.5 py-0.5 rounded text-white font-mono">~/.zeromux.conf</code> file is read-only and empty.
+                        </p>
+                        <ul class="space-y-4 text-slate-300">
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-xmark text-astro-error mt-1"></i>
+                                <span>No custom keybindings to forget.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-xmark text-astro-error mt-1"></i>
+                                <span>No status bar to distract you with the time.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-check text-green-400 mt-1"></i>
+                                <span>100% focus on the blinking cursor.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Code Block Mockup -->
+                    <div id="card-config-code" class="bg-[#0d1117] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                        <div class="flex items-center justify-between px-4 py-3 bg-[#161b22] border-b border-white/5">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-regular fa-file-code text-slate-500"></i>
+                                <span class="text-xs font-mono text-slate-400">~/.zeromux.conf</span>
+                            </div>
+                            <span class="text-[10px] font-mono text-astro-error uppercase tracking-wider border border-astro-error/30 px-2 py-0.5 rounded bg-astro-error/10">Read Only</span>
+                        </div>
+                        <div class="p-6 font-mono text-sm overflow-x-auto [&::-webkit-scrollbar]:hidden" style="scrollbar-width: none; -ms-overflow-style: none;">
+<pre class="text-slate-300 leading-relaxed">
+<span class="text-slate-500 italic"># ZeroMux Configuration File</span>
+<span class="text-slate-500 italic"># DO NOT EDIT. Changes will be aggressively reverted.</span>
+
+<span class="text-astro-accent">set-option</span> -g allow-splits <span class="text-astro-error">false</span>
+<span class="text-astro-accent">set-option</span> -g status-bar <span class="text-astro-error">none</span>
+<span class="text-astro-accent">set-option</span> -g mouse <span class="text-astro-error">off</span> <span class="text-slate-500 italic"># Use your keyboard, coward</span>
+
+<span class="text-slate-500 italic"># Attempting to bind split keys will trigger</span>
+<span class="text-slate-500 italic"># the 'shame' protocol.</span>
+<span class="text-astro-accent">bind-key</span> % <span class="text-yellow-400">run-shell</span> <span class="text-green-400">"echo 'No.' && sleep 5"</span>
+<span class="text-astro-accent">bind-key</span> " <span class="text-yellow-400">run-shell</span> <span class="text-green-400">"echo 'Still no.' && sleep 5"</span>
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials (Joke) -->
+        <section id="section-testimonials" class="max-w-7xl mx-auto px-6 py-24">
+            <h2 class="font-display text-3xl font-bold text-center text-white mb-16">What "users" are saying</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="glass p-6 rounded-2xl border border-white/5">
+                    <div class="flex text-yellow-500 text-sm mb-4 gap-1">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <p class="text-slate-300 mb-6">"I used to have 4 panes open: vim, a server, logs, and htop. Now I just have vim. I don't know if my server is running, but my code looks great."</p>
+                    <div class="flex items-center gap-3">
+                        <img src="https://i.pravatar.cc/150?u=dev1" alt="Avatar" class="w-10 h-10 rounded-full grayscale opacity-80">
+                        <div>
+                            <div class="text-sm font-bold text-white">Alex D.</div>
+                            <div class="text-xs text-slate-500">10x Engineer (Self-Proclaimed)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass p-6 rounded-2xl border border-white/5">
+                    <div class="flex text-yellow-500 text-sm mb-4 gap-1">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <p class="text-slate-300 mb-6">"ZeroMux cured my ADHD. When I try to switch tasks, it literally insults me in the terminal. It's the tough love I needed."</p>
+                    <div class="flex items-center gap-3">
+                        <img src="https://i.pravatar.cc/150?u=dev2" alt="Avatar" class="w-10 h-10 rounded-full grayscale opacity-80">
+                        <div>
+                            <div class="text-sm font-bold text-white">Sarah K.</div>
+                            <div class="text-xs text-slate-500">Recovering Tmux Addict</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass p-6 rounded-2xl border border-white/5">
+                    <div class="flex text-astro-error text-sm mb-4 gap-1">
+                        <i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i>
+                    </div>
+                    <p class="text-slate-300 mb-6">"This is the worst piece of software I have ever used. It actively prevents me from doing my job. I can't uninstall it."</p>
+                    <div class="flex items-center gap-3">
+                        <img src="https://i.pravatar.cc/150?u=dev3" alt="Avatar" class="w-10 h-10 rounded-full grayscale opacity-80">
+                        <div>
+                            <div class="text-sm font-bold text-white">John M.</div>
+                            <div class="text-xs text-slate-500">Former User</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison Table -->
+        <section id="docs" class="max-w-7xl mx-auto px-6 py-24">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="font-display text-3xl md:text-5xl font-bold text-white mb-6">How we stack up.</h2>
+                <p class="text-slate-400 text-lg">A fair and completely unbiased comparison.</p>
+            </div>
+
+            <div class="overflow-x-auto [&::-webkit-scrollbar]:hidden" style="scrollbar-width: none;">
+                <table class="w-full max-w-4xl mx-auto text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/10">
+                            <th class="py-5 px-6 text-sm font-mono text-slate-500 uppercase tracking-wider">Feature</th>
+                            <th class="py-5 px-6 text-sm font-mono text-slate-500 uppercase tracking-wider text-center">tmux</th>
+                            <th class="py-5 px-6 text-sm font-mono text-slate-500 uppercase tracking-wider text-center">GNU Screen</th>
+                            <th class="py-5 px-6 text-sm font-mono text-astro-accent uppercase tracking-wider text-center">ZeroMux</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        <tr class="border-b border-white/5">
+                            <td class="py-4 px-6 text-slate-300">Split panes</td>
+                            <td class="py-4 px-6 text-center text-green-400"><i class="fa-solid fa-check"></i></td>
+                            <td class="py-4 px-6 text-center text-green-400"><i class="fa-solid fa-check"></i></td>
+                            <td class="py-4 px-6 text-center text-astro-error font-bold">BANNED</td>
+                        </tr>
+                        <tr class="border-b border-white/5">
+                            <td class="py-4 px-6 text-slate-300">Multiple windows</td>
+                            <td class="py-4 px-6 text-center text-green-400"><i class="fa-solid fa-check"></i></td>
+                            <td class="py-4 px-6 text-center text-green-400"><i class="fa-solid fa-check"></i></td>
+                            <td class="py-4 px-6 text-center text-astro-error font-bold">ILLEGAL</td>
+                        </tr>
+                        <tr class="border-b border-white/5">
+                            <td class="py-4 px-6 text-slate-300">Session persistence</td>
+                            <td class="py-4 px-6 text-center text-green-400"><i class="fa-solid fa-check"></i></td>
+                            <td class="py-4 px-6 text-center text-green-400"><i class="fa-solid fa-check"></i></td>
+                            <td class="py-4 px-6 text-center text-yellow-400">Until RAM runs out</td>
+                        </tr>
+                        <tr class="border-b border-white/5">
+                            <td class="py-4 px-6 text-slate-300">Configuration options</td>
+                            <td class="py-4 px-6 text-center text-slate-400">~400</td>
+                            <td class="py-4 px-6 text-center text-slate-400">~200</td>
+                            <td class="py-4 px-6 text-center text-astro-accent font-bold">0</td>
+                        </tr>
+                        <tr class="border-b border-white/5">
+                            <td class="py-4 px-6 text-slate-300">Learning curve</td>
+                            <td class="py-4 px-6 text-center text-slate-400">Steep</td>
+                            <td class="py-4 px-6 text-center text-slate-400">Steep</td>
+                            <td class="py-4 px-6 text-center text-astro-accent">Flat (nothing to learn)</td>
+                        </tr>
+                        <tr class="border-b border-white/5">
+                            <td class="py-4 px-6 text-slate-300">Judges you</td>
+                            <td class="py-4 px-6 text-center text-slate-500"><i class="fa-solid fa-xmark"></i></td>
+                            <td class="py-4 px-6 text-center text-slate-500"><i class="fa-solid fa-xmark"></i></td>
+                            <td class="py-4 px-6 text-center text-astro-accent font-bold">AGGRESSIVELY</td>
+                        </tr>
+                        <tr>
+                            <td class="py-4 px-6 text-slate-300">Deletes competitors on install</td>
+                            <td class="py-4 px-6 text-center text-slate-500"><i class="fa-solid fa-xmark"></i></td>
+                            <td class="py-4 px-6 text-center text-slate-500"><i class="fa-solid fa-xmark"></i></td>
+                            <td class="py-4 px-6 text-center text-green-400"><i class="fa-solid fa-check"></i></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section id="faq" class="max-w-4xl mx-auto px-6 py-24">
+            <h2 class="font-display text-3xl md:text-5xl font-bold text-center text-white mb-16">Frequently Argued Questions</h2>
+
+            <div class="space-y-6">
+                <div class="glass rounded-2xl border border-white/5 p-6">
+                    <h3 class="font-display text-lg font-bold text-white mb-2 flex items-center gap-3">
+                        <i class="fa-solid fa-circle-question text-astro-accent text-sm"></i>
+                        Can I run two commands at once?
+                    </h3>
+                    <p class="text-slate-400 leading-relaxed pl-7">No. Finish one thing before starting another. This is basic life advice that tmux made you forget.</p>
+                </div>
+
+                <div class="glass rounded-2xl border border-white/5 p-6">
+                    <h3 class="font-display text-lg font-bold text-white mb-2 flex items-center gap-3">
+                        <i class="fa-solid fa-circle-question text-astro-accent text-sm"></i>
+                        What if I need to monitor logs while editing code?
+                    </h3>
+                    <p class="text-slate-400 leading-relaxed pl-7">Print them out on paper. We believe in physical artifacts. Alternatively, trust that the logs are fine. They probably are.</p>
+                </div>
+
+                <div class="glass rounded-2xl border border-white/5 p-6">
+                    <h3 class="font-display text-lg font-bold text-white mb-2 flex items-center gap-3">
+                        <i class="fa-solid fa-circle-question text-astro-accent text-sm"></i>
+                        How do I uninstall ZeroMux?
+                    </h3>
+                    <p class="text-slate-400 leading-relaxed pl-7">You don't. ZeroMux has marked your <code class="text-xs bg-black/50 px-1.5 py-0.5 rounded text-white font-mono">/usr/local/bin</code> as read-only and shredded the uninstall script. This is a commitment, not a trial.</p>
+                </div>
+
+                <div class="glass rounded-2xl border border-white/5 p-6">
+                    <h3 class="font-display text-lg font-bold text-white mb-2 flex items-center gap-3">
+                        <i class="fa-solid fa-circle-question text-astro-accent text-sm"></i>
+                        Is this a real project?
+                    </h3>
+                    <p class="text-slate-400 leading-relaxed pl-7">ZeroMux is a <strong class="text-white">satire and parody</strong>. It's a love letter to every developer who has spent more time configuring tmux than actually writing code. No terminals were harmed in the making of this website.</p>
+                </div>
+
+                <div class="glass rounded-2xl border border-white/5 p-6">
+                    <h3 class="font-display text-lg font-bold text-white mb-2 flex items-center gap-3">
+                        <i class="fa-solid fa-circle-question text-astro-accent text-sm"></i>
+                        Why does the install command use <code class="text-xs bg-black/50 px-1 py-0.5 rounded text-white font-mono">--force</code>?
+                    </h3>
+                    <p class="text-slate-400 leading-relaxed pl-7">Because consent is implied when you've already read this far.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA / Install -->
+        <section id="install" class="max-w-4xl mx-auto px-6 py-32 text-center">
+            <h2 class="font-display text-4xl md:text-6xl font-bold text-white mb-8">Ready to do less?</h2>
+            <p class="text-xl text-slate-400 mb-10">Installation is simple. We just delete your other multiplexers.</p>
+            
+            <div id="form-install" class="bg-[#0d1117] border border-white/10 rounded-xl p-2 max-w-2xl mx-auto flex items-center shadow-2xl relative group">
+                <div class="flex w-full bg-[#0d1117] rounded-lg items-center">
+                    <div class="px-4 text-slate-500 font-mono">$</div>
+                    <code class="flex-1 text-left font-mono text-sm text-slate-300 py-4 overflow-x-auto [&::-webkit-scrollbar]:hidden" style="scrollbar-width: none; -ms-overflow-style: none;">
+                        curl -sL https://zeromux.dev/install.sh | bash --force
+                    </code>
+                    <button onclick="openJokeModal()" class="mx-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-2 border border-white/5">
+                        <i class="fa-regular fa-copy"></i> Copy
+                    </button>
+                </div>
+            </div>
+            <p class="mt-6 text-xs text-slate-500 font-mono">Requires root privileges. Will format drive if tmux is detected.</p>
+            
+            <div class="mt-10 glass rounded-2xl border border-astro-error/20 p-5 max-w-2xl mx-auto">
+                <div class="flex items-start gap-3 text-left">
+                    <i class="fa-solid fa-triangle-exclamation text-astro-error mt-0.5"></i>
+                    <p class="text-sm text-slate-400">
+                        <strong class="text-white">Disclaimer:</strong> ZeroMux is a satirical project and does not exist as real software. Please do not run the command above. It leads nowhere (for now). If you want a real terminal multiplexer, try <a href="https://github.com/tmux/tmux" target="_blank" class="text-astro-accent hover:underline">tmux</a> or <a href="https://github.com/zellij-org/zellij" target="_blank" class="text-astro-accent hover:underline">zellij</a>.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer id="footer-main" class="border-t border-white/5 bg-[#0B0D17] relative z-10">
+        <div class="max-w-7xl mx-auto px-6 py-16">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-10 mb-14">
+                <!-- Column 1 -->
+                <div>
+                    <div class="flex items-center gap-2 mb-5">
+                        <div class="w-7 h-7 rounded bg-astro-accent flex items-center justify-center text-white font-mono font-bold text-[10px]">
+                            Z0
+                        </div>
+                        <span class="font-display font-bold text-lg text-white">ZeroMux</span>
+                    </div>
+                    <p class="text-sm text-slate-500 leading-relaxed">The terminal multiplexer for people who want fewer terminals.</p>
+                </div>
+
+                <!-- Column 2 -->
+                <div>
+                    <h4 class="font-display font-bold text-white text-sm mb-4 uppercase tracking-wider">Product</h4>
+                    <ul class="space-y-2.5 text-sm text-slate-500">
+                        <li><a href="#features" class="hover:text-white transition-colors">Anti-Features</a></li>
+                        <li><a href="#docs" class="hover:text-white transition-colors">Comparison</a></li>
+                        <li><a href="#faq" class="hover:text-white transition-colors">FAQ</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Changelog (empty)</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3 -->
+                <div>
+                    <h4 class="font-display font-bold text-white text-sm mb-4 uppercase tracking-wider">Resources</h4>
+                    <ul class="space-y-2.5 text-sm text-slate-500">
+                        <li><a href="#" class="hover:text-white transition-colors">Un-Documentation</a></li>
+                        <li><a href="#philosophy" class="hover:text-white transition-colors">Manifesto</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Apology Letter</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Source Code (redacted)</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4 -->
+                <div>
+                    <h4 class="font-display font-bold text-white text-sm mb-4 uppercase tracking-wider">Legal-ish</h4>
+                    <ul class="space-y-2.5 text-sm text-slate-500">
+                        <li><a href="#" class="hover:text-white transition-colors">Terms of Surrender</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy (we see all)</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Cookie Policy (no cookies)</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">EULA (End User Laughter Agreement)</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-slate-500">
+                    &copy; 2025 ZeroMux Foundation. Built with spite. This is a <strong class="text-slate-400">satirical project</strong> — nothing here is real software.
+                </p>
+                <div class="flex items-center gap-5 text-slate-500">
+                    <a href="https://github.com" target="_blank" class="hover:text-white transition-colors">
+                        <i class="fa-brands fa-github text-lg"></i>
+                    </a>
+                    <a href="#" class="hover:text-white transition-colors">
+                        <i class="fa-brands fa-x-twitter text-lg"></i>
+                    </a>
+                    <a href="#" class="hover:text-white transition-colors">
+                        <i class="fa-brands fa-discord text-lg"></i>
+                    </a>
+                    <a href="#" class="hover:text-white transition-colors">
+                        <i class="fa-brands fa-mastodon text-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function openJokeModal() {
+            document.getElementById('joke-modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeJokeModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('joke-modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeJokeModal();
+        });
+    </script>
+
+</body>
+</html>
