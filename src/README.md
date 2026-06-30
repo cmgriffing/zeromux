@@ -25,6 +25,7 @@ Then visit `http://localhost:8000`.
 - A dark, developer-tool-style landing page for the fictional ZeroMux product.
 - CDN-loaded Tailwind CSS with inline theme configuration.
 - Google Fonts and Font Awesome icons loaded from public CDNs.
+- Open Graph and Twitter Card metadata with a static PNG preview image.
 - Inline CSS for the custom background, glass panels, scrollbars, terminal
   mockup, and joke modal.
 - A small inline script that opens and closes the satire disclaimer modal.
@@ -54,6 +55,8 @@ CTA, copy button, or install command.
   link unless the project stops being satire.
 - Keep external dependencies CDN-based unless the project gains a real build
   process.
+- Edit `og-image.svg` first, then regenerate `og-image.png` from it when the
+  social preview artwork changes.
 - Treat placeholder social/legal/resource links as part of the joke unless they
   are intentionally replaced with real project pages.
 

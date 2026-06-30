@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">ZeroMux Open Graph Preview</title>
+  <desc id="desc">A dark terminal-style preview card for ZeroMux, the anti-multiplexer.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B0D17"/>
+      <stop offset="0.52" stop-color="#111524"/>
+      <stop offset="1" stop-color="#07111f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#2DD4BF"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-opacity="0.055" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <circle cx="1035" cy="78" r="185" fill="#06B6D4" opacity="0.16" filter="url(#glow)"/>
+  <circle cx="148" cy="550" r="150" fill="#2DD4BF" opacity="0.12" filter="url(#glow)"/>
+
+  <g transform="translate(78 76)">
+    <rect x="0" y="0" width="1044" height="478" rx="26" fill="#0d1117" stroke="#06B6D4" stroke-opacity="0.28" filter="url(#shadow)"/>
+    <rect x="0" y="0" width="1044" height="62" rx="26" fill="#161b22"/>
+    <path d="M0 38 Q0 0 26 0 H1018 Q1044 0 1044 26 V62 H0 Z" fill="#161b22"/>
+    <circle cx="36" cy="31" r="9" fill="#ff5f56"/>
+    <circle cx="66" cy="31" r="9" fill="#ffbd2e"/>
+    <circle cx="96" cy="31" r="9" fill="#27c93f"/>
+    <text x="522" y="37" text-anchor="middle" fill="#64748b" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, monospace" font-size="17">zeromux - bash - 80x24</text>
+
+    <g transform="translate(48 104)">
+      <rect width="76" height="76" rx="16" fill="url(#accent)"/>
+      <text x="38" y="49" text-anchor="middle" fill="#ffffff" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, monospace" font-weight="700" font-size="29">Z0</text>
+    </g>
+
+    <g transform="translate(150 98)">
+      <text fill="#ffffff" font-family="'Space Grotesk', Inter, sans-serif" font-weight="700" font-size="72" letter-spacing="0">ZeroMux</text>
+      <text y="66" fill="#06B6D4" font-family="'Space Grotesk', Inter, sans-serif" font-weight="700" font-size="44" letter-spacing="0">The Anti-Multiplexer</text>
+    </g>
+
+    <text x="48" y="260" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="28">One terminal pane. Zero context switching.</text>
+    <text x="48" y="302" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="24">Splitting windows is now a fatal error.</text>
+
+    <g transform="translate(48 348)">
+      <rect width="948" height="82" rx="14" fill="#05070d" stroke="#ffffff" stroke-opacity="0.08"/>
+      <text x="26" y="33" fill="#06B6D4" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, monospace" font-size="20">user@host:~$ zeromux split-window -h</text>
+      <text x="26" y="64" fill="#EF4444" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, monospace" font-weight="700" font-size="20">FATAL ERROR: Context switching detected.</text>
+    </g>
+
+  </g>
+</svg>
